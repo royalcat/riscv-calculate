@@ -32,7 +32,7 @@ jobs:
     steps:
       - name: install dependencies
         run: |
-          sudo su
+          sudo -i
           apt update
           apt install -y qemu binfmt-support qemu-user-static curl wget
           update-binfmts --display
@@ -45,12 +45,12 @@ jobs:
           update-alternatives --install /usr/bin/riscv64-linux-gnu-g++ riscv64-g++ /usr/bin/riscv64-linux-gnu-g++-12 10
       - name: download stage3
         run: |
-          sudo su
+          sudo -i
           export latest_stage3_path=$(curl -sSL ${download_url_prefix}/latest-stage3.txt | grep stage3-rv64_lp64d-systemd | awk '{ print $1 }' | head -n 1)
           wget ${download_url_prefix}/${latest_stage3_path}
       - name: create loop device
         run: |
-          sudo su
+          sudo -i
           mkdir rootfs
           fallocate -l 7G rootfs.img
           modprobe loop
@@ -66,7 +66,7 @@ jobs:
           mount "${DEVICE}p1" rootfs/boot
       - name: install stage3
         run: |
-          sudo su
+          sudo -i
           pushd rootfs
             tar xpvf ../stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
 
@@ -112,7 +112,7 @@ jobs:
           SOURCE_UBOOT: "https://github.com/smaeul/u-boot"
           SOURCE_KERNEL: "https://github.com/smaeul/linux"
         run: |
-          sudo su
+          sudo -i
           git clone --depth=1 -b ${KERNEL_TAG} ${SOURCE_KERNEL} kernel
           pushd kernel
             export DIR=$PWD
@@ -211,7 +211,7 @@ jobs:
 
       - name: build boot
         run: |
-          sudo su
+          sudo -i
           DIR='sun20i_d1_spl'
           git clone https://github.com/smaeul/sun20i_d1_spl ${DIR}
           pushd ${DIR}
@@ -259,7 +259,7 @@ jobs:
           cp $base_path/extlinux.conf "rootfs/boot/extlinux/extlinux.conf"
       - name: clean
         run: |
-          sudo su
+          sudo -i
           pushd rootfs
             if [ x"$(cat boot/latest-config | grep CONFIG_MODULES=y)" = x"CONFIG_MODULES=y" ]; then
               chroot . /bin/bash -c 'source /etc/profile && cd /boot && for file in $(ls /lib/modules/); do dracut initrd.img-$file $file; done'
