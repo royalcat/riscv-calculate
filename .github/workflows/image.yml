@@ -50,32 +50,33 @@ jobs:
         run: |
           mkdir rootfs
           fallocate -l 7G rootfs.img
-          losetup -P "${DEVICE}" rootfs.img
-          parted -s -a optimal -- "${DEVICE}" mklabel gpt
-          parted -s -a optimal -- "${DEVICE}" mkpart primary ext2 40MiB 500MiB
-          parted -s -a optimal -- "${DEVICE}" mkpart primary ext4 540MiB 100%
-          partprobe "${DEVICE}"
-          mkfs.ext2 -F -L boot "${DEVICE}p1"
-          mkfs.ext4 -F -L root "${DEVICE}p2"
-          mount "${DEVICE}p2" rootfs
-          mkdir rootfs/boot
-          mount "${DEVICE}p1" rootfs/boot
+          sudo modprobe loop
+          sudo losetup -P "${DEVICE}" rootfs.img
+          sudo parted -s -a optimal -- "${DEVICE}" mklabel gpt
+          sudo parted -s -a optimal -- "${DEVICE}" mkpart primary ext2 40MiB 500MiB
+          sudo parted -s -a optimal -- "${DEVICE}" mkpart primary ext4 540MiB 100%
+          sudo partprobe "${DEVICE}"
+          sudo mkfs.ext2 -F -L boot "${DEVICE}p1"
+          sudo mkfs.ext4 -F -L root "${DEVICE}p2"
+          sudo mount "${DEVICE}p2" rootfs
+          sudo mkdir rootfs/boot
+          sudo mount "${DEVICE}p1" rootfs/boot
       - name: install stage3
         run: |
           pushd rootfs
             tar xpvf ../stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
 
-            mount -t proc proc proc
-            mount -B /dev dev/
-            mount --make-rslave dev
-            mount -B /sys sys/
-            mount --make-rslave sys
-            mount --bind /run run
-            mount --make-rslave run
+            sudo mount -t proc proc proc
+            sudo mount -B /dev dev/
+            sudo mount --make-rslave dev
+            sudo mount -B /sys sys/
+            sudo mount --make-rslave sys
+            sudo mount --bind /run run
+            sudo mount --make-rslave run
 
             test -L dev/shm && rm dev/shm && mkdir dev/shm
-            mount --types tmpfs --options nosuid,nodev,noexec shm dev/shm
-            chmod 1777 dev/shm
+            sudo mount --types tmpfs --options nosuid,nodev,noexec shm dev/shm
+            sudo  chmod 1777 dev/shm
             
             cp --dereference /etc/resolv.conf etc/
             export OLDPWD=$PWD
@@ -265,9 +266,9 @@ jobs:
           rm -rf rootfs/var/tmp/portage/* rootfs/var/cache/distfiles/*
           rm -rf rootfs/root/*
           rm -rf rootfs/var/db/repos/*
-          umount rootfs/proc rootfs/dev/shm rootfs/dev rootfs/sys rootfs/run
-          umount -l rootfs
-          losetup -d ${DEVICE}
+          sudo umount rootfs/proc rootfs/dev/shm rootfs/dev rootfs/sys rootfs/run
+          sudo umount -l rootfs
+          sudo losetup -d ${DEVICE}
           export file_name=gentoo-${base_path}-$(date +%Y%m%d%H%M%S)
           mv rootfs.img ${file_name}.img
           zstd -T0 --ultra -20 $file_name.img
