@@ -32,37 +32,41 @@ jobs:
     steps:
       - name: install dependencies
         run: |
-          sudo apt update
-          sudo apt install -y qemu binfmt-support qemu-user-static curl wget
-          sudo update-binfmts --display
-          sudo apt install -y gdisk dosfstools g++-12-riscv64-linux-gnu build-essential \
+          sudo su
+          apt update
+          apt install -y qemu binfmt-support qemu-user-static curl wget
+          update-binfmts --display
+          apt install -y gdisk dosfstools g++-12-riscv64-linux-gnu build-essential \
             libncurses-dev gawk flex bison openssl libssl-dev \
             dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf mkbootimg \
             fakeroot genext2fs genisoimage libconfuse-dev mtd-utils mtools qemu-utils qemu-utils squashfs-tools \
-          sudo device-tree-compiler rauc simg2img u-boot-tools f2fs-tools arm-trusted-firmware-tools swig
-          sudo update-alternatives --install /usr/bin/riscv64-linux-gnu-gcc riscv64-gcc /usr/bin/riscv64-linux-gnu-gcc-12 10
-          sudo update-alternatives --install /usr/bin/riscv64-linux-gnu-g++ riscv64-g++ /usr/bin/riscv64-linux-gnu-g++-12 10
+          device-tree-compiler rauc simg2img u-boot-tools f2fs-tools arm-trusted-firmware-tools swig
+          update-alternatives --install /usr/bin/riscv64-linux-gnu-gcc riscv64-gcc /usr/bin/riscv64-linux-gnu-gcc-12 10
+          update-alternatives --install /usr/bin/riscv64-linux-gnu-g++ riscv64-g++ /usr/bin/riscv64-linux-gnu-g++-12 10
       - name: download stage3
         run: |
+          sudo su
           export latest_stage3_path=$(curl -sSL ${download_url_prefix}/latest-stage3.txt | grep stage3-rv64_lp64d-systemd | awk '{ print $1 }' | head -n 1)
           wget ${download_url_prefix}/${latest_stage3_path}
       - name: create loop device
         run: |
+          sudo su
           mkdir rootfs
           fallocate -l 7G rootfs.img
-          sudo modprobe loop
-          sudo losetup -P "${DEVICE}" rootfs.img
-          sudo parted -s -a optimal -- "${DEVICE}" mklabel gpt
-          sudo parted -s -a optimal -- "${DEVICE}" mkpart primary ext2 40MiB 500MiB
-          sudo parted -s -a optimal -- "${DEVICE}" mkpart primary ext4 540MiB 100%
-          sudo partprobe "${DEVICE}"
-          sudo mkfs.ext2 -F -L boot "${DEVICE}p1"
-          sudo mkfs.ext4 -F -L root "${DEVICE}p2"
-          sudo mount "${DEVICE}p2" rootfs
-          sudo mkdir rootfs/boot
-          sudo mount "${DEVICE}p1" rootfs/boot
+          modprobe loop
+          losetup -P "${DEVICE}" rootfs.img
+          parted -s -a optimal -- "${DEVICE}" mklabel gpt
+          parted -s -a optimal -- "${DEVICE}" mkpart primary ext2 40MiB 500MiB
+          parted -s -a optimal -- "${DEVICE}" mkpart primary ext4 540MiB 100%
+          partprobe "${DEVICE}"
+          mkfs.ext2 -F -L boot "${DEVICE}p1"
+          mkfs.ext4 -F -L root "${DEVICE}p2"
+          mount "${DEVICE}p2" rootfs
+          mkdir rootfs/boot
+          mount "${DEVICE}p1" rootfs/boot
       - name: install stage3
         run: |
+          sudo su
           pushd rootfs
             tar xpvf ../stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
 
@@ -76,7 +80,7 @@ jobs:
 
             test -L dev/shm && rm dev/shm && mkdir dev/shm
             sudo mount --types tmpfs --options nosuid,nodev,noexec shm dev/shm
-            sudo  chmod 1777 dev/shm
+            sudo chmod 1777 dev/shm
             
             cp --dereference /etc/resolv.conf etc/
             export OLDPWD=$PWD
@@ -108,6 +112,7 @@ jobs:
           SOURCE_UBOOT: "https://github.com/smaeul/u-boot"
           SOURCE_KERNEL: "https://github.com/smaeul/linux"
         run: |
+          sudo su
           git clone --depth=1 -b ${KERNEL_TAG} ${SOURCE_KERNEL} kernel
           pushd kernel
             export DIR=$PWD
@@ -206,6 +211,7 @@ jobs:
 
       - name: build boot
         run: |
+          sudo su
           DIR='sun20i_d1_spl'
           git clone https://github.com/smaeul/sun20i_d1_spl ${DIR}
           pushd ${DIR}
@@ -253,6 +259,7 @@ jobs:
           cp $base_path/extlinux.conf "rootfs/boot/extlinux/extlinux.conf"
       - name: clean
         run: |
+          sudo su
           pushd rootfs
             if [ x"$(cat boot/latest-config | grep CONFIG_MODULES=y)" = x"CONFIG_MODULES=y" ]; then
               chroot . /bin/bash -c 'source /etc/profile && cd /boot && for file in $(ls /lib/modules/); do dracut initrd.img-$file $file; done'
