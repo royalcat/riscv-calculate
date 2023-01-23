@@ -1,9 +1,9 @@
 name: Build d1 image
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   install_dependencies:
