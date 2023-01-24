@@ -65,17 +65,11 @@ task:
       mount "${DEVICE}p1" rootfs/boot
     fi
 
-  stage3_tar_cache:
-    folder: stage3
-    fingerprint_script: ls stage3/stage3-rv64*.tar.xz
-    populate_script: |
-      rm stage3/*
-      export latest_stage3_path=$(curl -sSL ${download_url_prefix}/latest-stage3.txt | grep stage3-rv64_lp64d-systemd | awk '{ print $1 }' | head -n 1)
-      wget -N ${download_url_prefix}/${latest_stage3_path}
-
   unpack_stage3_script: |
+    export latest_stage3_path=$(curl -sSL ${download_url_prefix}/latest-stage3.txt | grep stage3-rv64_lp64d-systemd | awk '{ print $1 }' | head -n 1)
+    wget ${download_url_prefix}/${latest_stage3_path}
     pushd rootfs
-      tar xpvf ../stage3/stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
+      tar xpvf ../stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
     popd
 
   mount_runtime_stage3_script: |
