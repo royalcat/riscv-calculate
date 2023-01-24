@@ -6,7 +6,6 @@ compute_engine_instance:
   memory: 32G
 
 env:
-  GITHUB_TOKEN: ENCRYPTED[2a3767f52b8878062329a7597cafea6cb63236046772a2a286f57447634dec2c49b32f3f6a4637fd9df09d7a3a3e6548]
   download_url_prefix: https://distfiles.gentoo.org/releases/riscv/autobuilds/
   CROSS_COMPILE: riscv64-linux-gnu-
   ARCH: riscv
@@ -15,7 +14,7 @@ env:
   OUT_DIR: /tmp/cirrus-ci-build/output
   DEVICE: /dev/loop100
 
-task:  
+task:
   test_machine_infoscript: |
     uname -a
     echo $(nproc)
@@ -38,7 +37,7 @@ task:
                         device-tree-compiler rauc simg2img u-boot-tools f2fs-tools arm-trusted-firmware-tools swig
     update-alternatives --install /usr/bin/riscv64-linux-gnu-gcc riscv64-gcc /usr/bin/riscv64-linux-gnu-gcc-12 10
     update-alternatives --install /usr/bin/riscv64-linux-gnu-g++ riscv64-g++ /usr/bin/riscv64-linux-gnu-g++-12 10
-  
+
   download_stage3_script: |
     export latest_stage3_path=$(curl -sSL ${download_url_prefix}/latest-stage3.txt | grep stage3-rv64_lp64d-systemd | awk '{ print $1 }' | head -n 1)
     wget ${download_url_prefix}/${latest_stage3_path}
@@ -46,7 +45,7 @@ task:
   create_rootfsimg_script: |
     mkdir rootfs
     fallocate -l 7G rootfs.img
-    
+
     if [ x"${base_path}" = x"visionfive" ]; then
       sfdisk rootfs.img < ${base_path}/part-table.conf
       losetup -P "${DEVICE}" rootfs.img
@@ -72,7 +71,7 @@ task:
     fi
 
   unpack_stage3_script: |
-    
+
     pushd rootfs
       tar xpvf ../stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
     popd
@@ -94,7 +93,7 @@ task:
       cp --dereference /etc/resolv.conf etc/
       export OLDPWD=$PWD
       echo 'MAKEOPTS="-j8"' | sudo tee -a $OLDPWD/etc/portage/make.conf
-      echo 'EMERGE_DEFAULT_OPTS="--jobs 3 --load-average 8.0"' | sudo tee -a $OLDPWD/etc/portage/make.conf
+      echo 'EMERGE_DEFAULT_OPTS="--jobs 8 --load-average 8.0"' | sudo tee -a $OLDPWD/etc/portage/make.conf
       mkdir --parents $OLDPWD/etc/portage/repos.conf
       cp -v $OLDPWD/usr/share/portage/config/repos.conf $OLDPWD/etc/portage/repos.conf/gentoo.conf
       cat ../${base_path}/fstab | sudo tee -a $OLDPWD/etc/fstab
@@ -106,12 +105,14 @@ task:
       exit 0
     fi
     pushd rootfs
-      chroot . /bin/bash -c "source /etc/profile && systemctl enable systemd-networkd"
       chroot . /bin/bash -c "source /etc/profile && echo root:Riscv2022# | chpasswd"
       chroot . /bin/bash -c "source /etc/profile && echo gentoo-riscv > /etc/hostname"
       chroot . /bin/bash -c "source /etc/profile && emerge-webrsync"
-      chroot . /bin/bash -c "source /etc/profile && emerge -v -g htop neofetch tmux net-wireless/wpa_supplicant dev-vcs/git tmux dracut"
-      #chroot . /bin/bash -c "source /etc/profile && emerge --verbose --update --deep --newuse @world"
+      chroot . /bin/bash -c "source /etc/profile && emerge -v -g app-portage/gentoolkit"
+      chroot . /bin/bash -c "source /etc/profile && euse -E networkmanager"
+      chroot . /bin/bash -c "source /etc/profile && emerge -v -g htop neofetch tmux net-wireless/wpa_supplicant dev-vcs/git tmux dracut net-misc/networkmanager"
+      chroot . /bin/bash -c "source /etc/profile && emerge --verbose --update --deep --newuse @world"
+      chroot . /bin/bash -c "source /etc/profile && systemctl enable NetworkManager
       ls -al boot/
     popd
 
@@ -137,7 +138,7 @@ task:
           sudo cp -v .config ../rootfs/boot/latest-config
           ls -al ../rootfs/boot/
         popd
-      
+
       install_grub_script: |
         mkdir -p rootfs/boot/efi/EFI/gentoo
         cp -v $base_path/grubriscv64.efi rootfs/boot/efi/EFI/gentoo/
@@ -150,16 +151,16 @@ task:
     - name: d1
       env:
         base_path: d1
-        COMMIT_BOOT0: '882671fcf53137aaafc3a94fa32e682cb7b921f1'
-        COMMIT_UBOOT: 'afc07cec423f17ebb4448a19435292ddacf19c9b'
-        COMMIT_KERNEL: 'fe178cf0153d98b71cb01a46c8cc050826a17e77' # equals riscv/d1-wip head
-        KERNEL_TAG: 'riscv/d1-wip'
-        KERNEL_RELEASE: '5.19.0-AllWinnerD1-Smaeul' # must match commit!
+        COMMIT_BOOT0: "882671fcf53137aaafc3a94fa32e682cb7b921f1"
+        COMMIT_UBOOT: "afc07cec423f17ebb4448a19435292ddacf19c9b"
+        COMMIT_KERNEL: "fe178cf0153d98b71cb01a46c8cc050826a17e77" # equals riscv/d1-wip head
+        KERNEL_TAG: "riscv/d1-wip"
+        KERNEL_RELEASE: "5.19.0-AllWinnerD1-Smaeul" # must match commit!
 
-        SOURCE_BOOT0: 'https://github.com/smaeul/sun20i_d1_spl'
-        SOURCE_OPENSBI: 'https://github.com/smaeul/opensbi'
-        SOURCE_UBOOT: 'https://github.com/smaeul/u-boot'
-        SOURCE_KERNEL: 'https://github.com/smaeul/linux'
+        SOURCE_BOOT0: "https://github.com/smaeul/sun20i_d1_spl"
+        SOURCE_OPENSBI: "https://github.com/smaeul/opensbi"
+        SOURCE_UBOOT: "https://github.com/smaeul/u-boot"
+        SOURCE_KERNEL: "https://github.com/smaeul/linux"
 
       kernel_script: |
         git clone --depth=1 -b ${KERNEL_TAG} ${SOURCE_KERNEL} kernel
@@ -258,7 +259,6 @@ task:
           done
         popd
 
-
       boot0_script: |
         DIR='sun20i_d1_spl'
         git clone https://github.com/smaeul/sun20i_d1_spl ${DIR}
@@ -279,14 +279,12 @@ task:
 
         DIR='u-boot'
         git clone "${SOURCE_UBOOT}"
-        wget https://raw.githubusercontent.com/sehraf/riscv-arch-image-builder/ad08db949832cf70767c32f5a3035ea88bc6eea8/uboot-makefile.patch
         pushd ${DIR}
           git checkout d1-wip
-          git apply ../uboot-makefile.patch
           make CROSS_COMPILE="${CROSS_COMPILE}" ARCH="${ARCH}" nezha_defconfig
           make CROSS_COMPILE="${CROSS_COMPILE}" ARCH="${ARCH}" -j$(nproc)
         popd
-        
+
         # build u-boot toc
         cp -v $base_path/licheerv_toc1.cfg .
         ${DIR}/tools/mkimage -T sunxi_toc1 -d licheerv_toc1.cfg u-boot.toc1
@@ -296,7 +294,7 @@ task:
 
         # https://andreas.welcomes-you.com/boot-sw-debian-risc-v-lichee-rv/
         cp -v $base_path/bootscr.txt .
-        
+
         ${DIR}/tools/mkimage -T script -C none -O linux -A "${ARCH}" -d bootscr.txt boot.scr
         rm bootscr.txt
         cp boot.scr "${OUT_DIR}"
@@ -330,9 +328,6 @@ task:
     mv rootfs.img ${file_name}.img
     zstd -T0 --ultra -20 $file_name.img
     ls -al .
-
-  upload_publish_script: |
-    ./publish.sh
 
   upload_artifacts:
     path: "gentoo-*-*.img.zst"
