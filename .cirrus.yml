@@ -108,7 +108,7 @@ task:
       chroot . /bin/bash -c "source /etc/profile && echo root:Riscv2022# | chpasswd"
       chroot . /bin/bash -c "source /etc/profile && echo gentoo-riscv > /etc/hostname"
       chroot . /bin/bash -c "source /etc/profile && emerge-webrsync"
-      chroot . /bin/bash -c "source /etc/profile && emerge -v -g app-portage/gentoolkit net-misc/networkmanager"
+      chroot . /bin/bash -c "source /etc/profile && emerge -v -g app-portage/gentoolkit"
       chroot . /bin/bash -c "source /etc/profile && euse -E networkmanager"
       chroot . /bin/bash -c "source /etc/profile && emerge --changed-use --deep @world"
       chroot . /bin/bash -c "source /etc/profile && emerge -v -g htop neofetch tmux net-wireless/wpa_supplicant dev-vcs/git tmux dracut"
