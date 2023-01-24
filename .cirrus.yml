@@ -1,12 +1,14 @@
-compute_engine_instance:
-  image_project: cirrus-images
-  image: family/docker-builder
-  platform: linux
+# container:
+#   kvm: true
+#   cpu: 8
+#    memory: 32G
+
+container:
+  kvm: "true"
   cpu: 8
   memory: 32G
 
 env:
-  GITHUB_TOKEN: ENCRYPTED[2a3767f52b8878062329a7597cafea6cb63236046772a2a286f57447634dec2c49b32f3f6a4637fd9df09d7a3a3e6548]
   download_url_prefix: https://distfiles.gentoo.org/releases/riscv/autobuilds/
   CROSS_COMPILE: riscv64-linux-gnu-
   ARCH: riscv
