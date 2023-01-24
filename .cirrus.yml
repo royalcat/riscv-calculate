@@ -66,6 +66,16 @@ task:
       mount "${DEVICE}p1" rootfs/boot
     fi
 
+  stage3_cache:
+    folder: rootfs
+    populate_script: |
+      export latest_stage3_path=$(curl -sSL ${download_url_prefix}/latest-stage3.txt | grep stage3-rv64_lp64d-systemd | awk '{ print $1 }' | head -n 1)
+      wget -N ${download_url_prefix}/${latest_stage3_path}
+
+      pushd rootfs
+        tar xpvf ../stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
+      popd
+
   mount_script: |
     pushd rootfs
       mount -t proc proc proc
@@ -80,16 +90,6 @@ task:
       mount --types tmpfs --options nosuid,nodev,noexec shm dev/shm
       chmod 1777 dev/shm
     popd
-
-  stage3_cache:
-    folder: rootfs
-    populate_script: |
-      export latest_stage3_path=$(curl -sSL ${download_url_prefix}/latest-stage3.txt | grep stage3-rv64_lp64d-systemd | awk '{ print $1 }' | head -n 1)
-      wget -N ${download_url_prefix}/${latest_stage3_path}
-
-      pushd rootfs
-        tar xpvf ../stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
-      popd
 
   setup_stage3_script: |
     pushd rootfs
