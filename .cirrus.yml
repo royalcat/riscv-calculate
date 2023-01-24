@@ -6,7 +6,6 @@ compute_engine_instance:
   memory: 32G
 
 env:
-  GITHUB_TOKEN: ENCRYPTED[2a3767f52b8878062329a7597cafea6cb63236046772a2a286f57447634dec2c49b32f3f6a4637fd9df09d7a3a3e6548]
   download_url_prefix: https://distfiles.gentoo.org/releases/riscv/autobuilds/
   CROSS_COMPILE: riscv64-linux-gnu-
   ARCH: riscv
@@ -14,6 +13,7 @@ env:
   HOME: /tmp/cirrus-ci-build/
   OUT_DIR: /tmp/cirrus-ci-build/output
   DEVICE: /dev/loop100
+  ROOT_PASSWORD: "Riscv2022#" #TODO
 
 task:
   test_machine_infoscript: |
@@ -38,10 +38,6 @@ task:
                         device-tree-compiler rauc simg2img u-boot-tools f2fs-tools arm-trusted-firmware-tools swig
     update-alternatives --install /usr/bin/riscv64-linux-gnu-gcc riscv64-gcc /usr/bin/riscv64-linux-gnu-gcc-12 10
     update-alternatives --install /usr/bin/riscv64-linux-gnu-g++ riscv64-g++ /usr/bin/riscv64-linux-gnu-g++-12 10
-
-  download_stage3_script: |
-    export latest_stage3_path=$(curl -sSL ${download_url_prefix}/latest-stage3.txt | grep stage3-rv64_lp64d-systemd | awk '{ print $1 }' | head -n 1)
-    wget ${download_url_prefix}/${latest_stage3_path}
 
   create_rootfsimg_script: |
     mkdir rootfs
@@ -71,8 +67,11 @@ task:
       mount "${DEVICE}p1" rootfs/boot
     fi
 
-  unpack_stage3_script: |
+  download_stage3_script: |
+    export latest_stage3_path=$(curl -sSL ${download_url_prefix}/latest-stage3.txt | grep stage3-rv64_lp64d-systemd | awk '{ print $1 }' | head -n 1)
+    wget ${download_url_prefix}/${latest_stage3_path}
 
+  unpack_stage3_script: |
     pushd rootfs
       tar xpvf ../stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
     popd
@@ -107,11 +106,11 @@ task:
     fi
     pushd rootfs
       chroot . /bin/bash -c "source /etc/profile && systemctl enable systemd-networkd"
-      chroot . /bin/bash -c "source /etc/profile && echo root:Riscv2022# | chpasswd"
+      chroot . /bin/bash -c "source /etc/profile && echo root:${ROOT_PASSWORD} | chpasswd"
       chroot . /bin/bash -c "source /etc/profile && echo gentoo-riscv > /etc/hostname"
       chroot . /bin/bash -c "source /etc/profile && emerge-webrsync"
-      chroot . /bin/bash -c "source /etc/profile && emerge -v -g htop neofetch tmux net-wireless/wpa_supplicant dev-vcs/git tmux dracut app-portage/gentoolkit"
       chroot . /bin/bash -c "source /etc/profile && euse -E networkmanager"
+      chroot . /bin/bash -c "source /etc/profile && emerge -v -g htop neofetch tmux net-wireless/wpa_supplicant dev-vcs/git tmux dracut app-portage/gentoolkit"
       chroot . /bin/bash -c "source /etc/profile && emerge --verbose --changed-use --deep @world"
       #chroot . /bin/bash -c "source /etc/profile && emerge --verbose --update --deep --newuse @world"
       ls -al boot/
@@ -130,13 +129,13 @@ task:
           fi
           make CROSS_COMPILE=riscv64-linux-gnu- ARCH=riscv -j$(nproc)
           if [ x"$(cat .config | grep CONFIG_MODULES=y)" = x"CONFIG_MODULES=y" ]; then
-            sudo make CROSS_COMPILE=riscv64-linux-gnu- ARCH=riscv INSTALL_MOD_PATH=../rootfs/ modules_install -j$(nproc)
+            make CROSS_COMPILE=riscv64-linux-gnu- ARCH=riscv INSTALL_MOD_PATH=../rootfs/ modules_install -j$(nproc)
           fi
-          sudo make CROSS_COMPILE=riscv64-linux-gnu- ARCH=riscv INSTALL_PATH=../rootfs/boot zinstall -j$(nproc)
+          make CROSS_COMPILE=riscv64-linux-gnu- ARCH=riscv INSTALL_PATH=../rootfs/boot zinstall -j$(nproc)
           # Install DTB
-          sudo cp -v arch/riscv/boot/dts/starfive/jh7100-starfive-visionfive-v1.dtb ../rootfs/boot/
-          sudo cp -v arch/riscv/boot/dts/starfive/jh7100-beaglev-starlight.dtb ../rootfs/boot/
-          sudo cp -v .config ../rootfs/boot/latest-config
+          cp -v arch/riscv/boot/dts/starfive/jh7100-starfive-visionfive-v1.dtb ../rootfs/boot/
+          cp -v arch/riscv/boot/dts/starfive/jh7100-beaglev-starlight.dtb ../rootfs/boot/
+          cp -v .config ../rootfs/boot/latest-config
           ls -al ../rootfs/boot/
         popd
 
