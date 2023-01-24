@@ -110,8 +110,8 @@ task:
       chroot . /bin/bash -c "source /etc/profile && emerge-webrsync"
       chroot . /bin/bash -c "source /etc/profile && emerge -v -g app-portage/gentoolkit"
       chroot . /bin/bash -c "source /etc/profile && euse -E networkmanager"
+      chroot . /bin/bash -c "source /etc/profile && emerge --changed-use --deep @world"
       chroot . /bin/bash -c "source /etc/profile && emerge -v -g htop neofetch tmux net-wireless/wpa_supplicant dev-vcs/git tmux dracut net-misc/networkmanager"
-      chroot . /bin/bash -c "source /etc/profile && emerge --verbose --update --deep --newuse @world"
       chroot . /bin/bash -c "source /etc/profile && systemctl enable NetworkManager
       ls -al boot/
     popd
