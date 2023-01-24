@@ -112,7 +112,7 @@ task:
       chroot . /bin/bash -c "source /etc/profile && emerge-webrsync"
       chroot . /bin/bash -c "source /etc/profile && emerge -v -g htop neofetch tmux net-wireless/wpa_supplicant dev-vcs/git tmux dracut app-portage/gentoolkit"
       chroot . /bin/bash -c "source /etc/profile && euse -E networkmanager"
-      chroot . /bin/bash -c "source /etc/profile && emerge --verbose --changed-use --deep @world
+      chroot . /bin/bash -c "source /etc/profile && emerge --verbose --changed-use --deep @world"
       #chroot . /bin/bash -c "source /etc/profile && emerge --verbose --update --deep --newuse @world"
       ls -al boot/
     popd
@@ -331,9 +331,6 @@ task:
     mv rootfs.img ${file_name}.img
     zstd -T0 --ultra -20 $file_name.img
     ls -al .
-
-  upload_publish_script: |
-    ./publish.sh
 
   upload_artifacts:
     path: "gentoo-*-*.img.zst"
