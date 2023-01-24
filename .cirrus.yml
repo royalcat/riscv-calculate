@@ -10,7 +10,6 @@ env:
   download_url_prefix: https://distfiles.gentoo.org/releases/riscv/autobuilds/
   CROSS_COMPILE: riscv64-linux-gnu-
   ARCH: riscv
-  SKIP_INSTALL_PACKAGE: no
   HOME: /tmp/cirrus-ci-build/
   OUT_DIR: /tmp/cirrus-ci-build/output
   DEVICE: /dev/loop100
@@ -38,10 +37,6 @@ task:
                         device-tree-compiler rauc simg2img u-boot-tools f2fs-tools arm-trusted-firmware-tools swig
     update-alternatives --install /usr/bin/riscv64-linux-gnu-gcc riscv64-gcc /usr/bin/riscv64-linux-gnu-gcc-12 10
     update-alternatives --install /usr/bin/riscv64-linux-gnu-g++ riscv64-g++ /usr/bin/riscv64-linux-gnu-g++-12 10
-
-  download_stage3_script: |
-    export latest_stage3_path=$(curl -sSL ${download_url_prefix}/latest-stage3.txt | grep stage3-rv64_lp64d-systemd | awk '{ print $1 }' | head -n 1)
-    wget ${download_url_prefix}/${latest_stage3_path}
 
   create_rootfsimg_script: |
     mkdir rootfs
@@ -71,13 +66,7 @@ task:
       mount "${DEVICE}p1" rootfs/boot
     fi
 
-  unpack_stage3_script: |
-
-    pushd rootfs
-      tar xpvf ../stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
-    popd
-
-  mount_and_setup_script: |
+  mount_script: |
     pushd rootfs
       mount -t proc proc proc
       mount -B /dev dev/
@@ -90,7 +79,20 @@ task:
       test -L dev/shm && rm dev/shm && mkdir dev/shm
       mount --types tmpfs --options nosuid,nodev,noexec shm dev/shm
       chmod 1777 dev/shm
-      
+    popd
+
+  stage3_cache:
+    folder: rootfs
+    populate_script: |
+      export latest_stage3_path=$(curl -sSL ${download_url_prefix}/latest-stage3.txt | grep stage3-rv64_lp64d-systemd | awk '{ print $1 }' | head -n 1)
+      wget -N ${download_url_prefix}/${latest_stage3_path}
+
+      pushd rootfs
+        tar xpvf ../stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
+      popd
+
+  setup_stage3_script: |
+    pushd rootfs
       cp --dereference /etc/resolv.conf etc/
       export OLDPWD=$PWD
       echo 'MAKEOPTS="-j8"' | sudo tee -a $OLDPWD/etc/portage/make.conf
@@ -99,13 +101,7 @@ task:
       cp -v $OLDPWD/usr/share/portage/config/repos.conf $OLDPWD/etc/portage/repos.conf/gentoo.conf
       cat ../${base_path}/fstab | sudo tee -a $OLDPWD/etc/fstab
       echo 'PORTAGE_BINHOST="https://mirror.onfoo.top/calculate/grp/riscv64/"' | sudo tee -a $OLDPWD/etc/portage/make.conf
-    popd
 
-  update_stage3_script: |
-    if [ x"${SKIP_INSTALL_PACKAGE}" = x"yes" ]; then
-      exit 0
-    fi
-    pushd rootfs
       chroot . /bin/bash -c "source /etc/profile && systemctl enable systemd-networkd"
       chroot . /bin/bash -c "source /etc/profile && echo root:Riscv2022# | chpasswd"
       chroot . /bin/bash -c "source /etc/profile && echo gentoo-riscv > /etc/hostname"
