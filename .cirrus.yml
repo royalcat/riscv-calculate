@@ -6,7 +6,6 @@ compute_engine_instance:
   memory: 32G
 
 env:
-  GITHUB_TOKEN: ENCRYPTED[2a3767f52b8878062329a7597cafea6cb63236046772a2a286f57447634dec2c49b32f3f6a4637fd9df09d7a3a3e6548]
   download_url_prefix: https://distfiles.gentoo.org/releases/riscv/autobuilds/
   CROSS_COMPILE: riscv64-linux-gnu-
   ARCH: riscv
@@ -66,30 +65,33 @@ task:
       mount "${DEVICE}p1" rootfs/boot
     fi
 
-  stage3_cache:
-    folder: rootfs
+  stage3_tar_cache:
+    folder: stage3
+    fingerprint_script: ls stage3/stage3-rv64*.tar.xz
     populate_script: |
+      rm stage3/*
       export latest_stage3_path=$(curl -sSL ${download_url_prefix}/latest-stage3.txt | grep stage3-rv64_lp64d-systemd | awk '{ print $1 }' | head -n 1)
       wget -N ${download_url_prefix}/${latest_stage3_path}
 
-      pushd rootfs
-        tar xpvf ../stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
-      popd
-
-  mount_script: |
+  unpack_stage3_script: |
     pushd rootfs
-      mount -t proc proc proc
-      mount -B /dev dev/
-      mount --make-rslave dev
-      mount -B /sys sys/
-      mount --make-rslave sys
-      mount --bind /run run
-      mount --make-rslave run
-
-      test -L dev/shm && rm dev/shm && mkdir dev/shm
-      mount --types tmpfs --options nosuid,nodev,noexec shm dev/shm
-      chmod 1777 dev/shm
+      tar xpvf ../stage3/stage3-rv64*.tar.xz --xattrs-include='*.*' --numeric-owner
     popd
+
+  mount_runtime_stage3_script: |
+    pushd rootfs
+        mount -t proc proc proc
+        mount -B /dev dev/
+        mount --make-rslave dev
+        mount -B /sys sys/
+        mount --make-rslave sys
+        mount --bind /run run
+        mount --make-rslave run
+
+        test -L dev/shm && rm dev/shm && mkdir dev/shm
+        mount --types tmpfs --options nosuid,nodev,noexec shm dev/shm
+        chmod 1777 dev/shm
+      popd
 
   setup_stage3_script: |
     pushd rootfs
