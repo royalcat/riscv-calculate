@@ -94,7 +94,7 @@ task:
       cp --dereference /etc/resolv.conf etc/
       export OLDPWD=$PWD
       echo 'MAKEOPTS="-j8"' | sudo tee -a $OLDPWD/etc/portage/make.conf
-      echo 'EMERGE_DEFAULT_OPTS="--jobs 3 --load-average 8.0"' | sudo tee -a $OLDPWD/etc/portage/make.conf
+      echo 'EMERGE_DEFAULT_OPTS="--jobs 8 --load-average 8.0"' | sudo tee -a $OLDPWD/etc/portage/make.conf
       mkdir --parents $OLDPWD/etc/portage/repos.conf
       cp -v $OLDPWD/usr/share/portage/config/repos.conf $OLDPWD/etc/portage/repos.conf/gentoo.conf
       cat ../${base_path}/fstab | sudo tee -a $OLDPWD/etc/fstab
