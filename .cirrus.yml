@@ -280,10 +280,8 @@ task:
 
         DIR='u-boot'
         git clone "${SOURCE_UBOOT}"
-        wget https://raw.githubusercontent.com/sehraf/riscv-arch-image-builder/ad08db949832cf70767c32f5a3035ea88bc6eea8/uboot-makefile.patch
         pushd ${DIR}
           git checkout d1-wip
-          git apply ../uboot-makefile.patch
           make CROSS_COMPILE="${CROSS_COMPILE}" ARCH="${ARCH}" nezha_defconfig
           make CROSS_COMPILE="${CROSS_COMPILE}" ARCH="${ARCH}" -j$(nproc)
         popd
