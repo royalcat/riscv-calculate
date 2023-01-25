@@ -105,14 +105,12 @@ task:
       exit 0
     fi
     pushd rootfs
+      chroot . /bin/bash -c "source /etc/profile && systemctl enable systemd-networkd"
+      chroot . /bin/bash -c "source /etc/profile && echo root:Riscv2022# | chpasswd"
       chroot . /bin/bash -c "source /etc/profile && echo root:Riscv2022# | chpasswd"
       chroot . /bin/bash -c "source /etc/profile && echo gentoo-riscv > /etc/hostname"
       chroot . /bin/bash -c "source /etc/profile && emerge-webrsync"
-      chroot . /bin/bash -c "source /etc/profile && emerge -v -g app-portage/gentoolkit"
-      chroot . /bin/bash -c "source /etc/profile && euse -E networkmanager"
-      chroot . /bin/bash -c "source /etc/profile && emerge -g --changed-use --deep @world"
-      chroot . /bin/bash -c "source /etc/profile && emerge -v -g htop neofetch tmux dev-vcs/git tmux dracut app-portage/gentoolkit"
-      chroot . /bin/bash -c "source /etc/profile && systemctl enable NetworkManager"
+      chroot . /bin/bash -c "source /etc/profile && emerge -v -g htop neofetch tmux dev-vcs/git tmux dracut app-portage/gentoolkit net-wireless/iwd net-wireless/wpa_supplicant "
       ls -al boot/
     popd
 
