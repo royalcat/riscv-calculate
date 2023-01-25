@@ -2,8 +2,8 @@ compute_engine_instance:
   image_project: cirrus-images
   image: family/docker-builder
   platform: linux
-  cpu: 8
-  memory: 32G
+  cpu: 4
+  memory: 16G
 
 env:
   download_url_prefix: https://distfiles.gentoo.org/releases/riscv/autobuilds/
