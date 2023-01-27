@@ -2,7 +2,7 @@ compute_engine_instance:
   image_project: cirrus-images
   image: family/docker-builder
   platform: linux
-  cpu: 8
+  cpu: 4
   memory: 16G
 
 env:
@@ -93,11 +93,11 @@ task:
       cp --dereference /etc/resolv.conf etc/
       export OLDPWD=$PWD
       echo 'MAKEOPTS="-j8"' | sudo tee -a $OLDPWD/etc/portage/make.conf
-      echo 'EMERGE_DEFAULT_OPTS="--jobs 8 --load-average 8.0"' | sudo tee -a $OLDPWD/etc/portage/make.conf
+      echo 'EMERGE_DEFAULT_OPTS="--jobs 3 --load-average 8.0"' | sudo tee -a $OLDPWD/etc/portage/make.conf
       mkdir --parents $OLDPWD/etc/portage/repos.conf
       cp -v $OLDPWD/usr/share/portage/config/repos.conf $OLDPWD/etc/portage/repos.conf/gentoo.conf
       cat ../${base_path}/fstab | sudo tee -a $OLDPWD/etc/fstab
-      echo 'PORTAGE_BINHOST="http://mirror.onfoo.top/calculate/grp/riscv64/"' | sudo tee -a $OLDPWD/etc/portage/make.conf
+      echo 'PORTAGE_BINHOST="https://mirror.onfoo.top/calculate/grp/riscv64/"' | sudo tee -a $OLDPWD/etc/portage/make.conf
     popd
 
   update_stage3_script: |
@@ -109,7 +109,7 @@ task:
       chroot . /bin/bash -c "source /etc/profile && echo root:Riscv2022# | chpasswd"
       chroot . /bin/bash -c "source /etc/profile && echo gentoo-riscv > /etc/hostname"
       chroot . /bin/bash -c "source /etc/profile && emerge-webrsync"
-      chroot . /bin/bash -c "source /etc/profile && emerge -v -g htop neofetch tmux net-wireless/wpa_supplicant dev-vcs/git dracut net-wireless/iwd "
+      chroot . /bin/bash -c "source /etc/profile && emerge -v -k htop neofetch tmux net-wireless/wpa_supplicant dev-vcs/git dracut net-wireless/iwd "
       ls -al boot/
     popd
 
