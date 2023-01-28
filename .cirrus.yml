@@ -109,7 +109,8 @@ task:
       chroot . /bin/bash -c "source /etc/profile && echo root:Riscv2022# | chpasswd"
       chroot . /bin/bash -c "source /etc/profile && echo gentoo-riscv > /etc/hostname"
       chroot . /bin/bash -c "source /etc/profile && emerge-webrsync"
-      chroot . /bin/bash -c "source /etc/profile && emerge -v -k htop neofetch tmux net-wireless/wpa_supplicant dev-vcs/git dracut net-wireless/iwd "
+      chroot . /bin/bash -c "source /etc/profile && emerge -v -g htop neofetch tmux net-wireless/wpa_supplicant dev-vcs/git tmux dracut"
+      #chroot . /bin/bash -c "source /etc/profile && emerge --verbose --update --deep --newuse @world"
       ls -al boot/
     popd
 
@@ -158,6 +159,8 @@ task:
         SOURCE_OPENSBI: "https://github.com/smaeul/opensbi"
         SOURCE_UBOOT: "https://github.com/smaeul/u-boot"
         SOURCE_KERNEL: "https://github.com/smaeul/linux"
+
+        TAG_UBOOT: "d1-2022-10-31"
 
       kernel_script: |
         git clone --depth=1 -b ${KERNEL_TAG} ${SOURCE_KERNEL} kernel
@@ -266,20 +269,20 @@ task:
         popd
         cp ${DIR}/nboot/boot0_sdcard_sun20iw1p1.bin "${OUT_DIR}"
 
-      uboot_script: |
+      opensbi_script: |
         DIR='opensbi'
-        git clone -b d1-wip "${SOURCE_OPENSBI}" ${DIR}
+        git clone --depth 1 "${SOURCE_OPENSBI}" -b d1-wip
         pushd ${DIR}
           make CROSS_COMPILE="${CROSS_COMPILE}" PLATFORM=generic FW_PIC=y FW_OPTIONS=0x2
         popd
-        # cp opensbi/build/platform/generic/firmware/fw_dynamic.bin ${OUT_DIR}
+        cp ${DIR}/build/platform/generic/firmware/fw_dynamic.bin "${OUT_DIR}"
 
+      uboot_script: |
         DIR='u-boot'
-        git clone "${SOURCE_UBOOT}"
+        git clone --depth 1 "${SOURCE_UBOOT}" -b "${TAG_UBOOT}"
         pushd ${DIR}
-          git checkout d1-wip
           make CROSS_COMPILE="${CROSS_COMPILE}" ARCH="${ARCH}" nezha_defconfig
-          make CROSS_COMPILE="${CROSS_COMPILE}" ARCH="${ARCH}" -j$(nproc)
+          make CROSS_COMPILE="${CROSS_COMPILE}" ARCH="${ARCH}" OPENSBI="${OUT_DIR}/fw_dynamic.bin" -j "${NPROC}"
         popd
 
         # build u-boot toc
